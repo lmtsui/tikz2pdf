@@ -1,9 +1,9 @@
-#usage
+# usage
 ```
 python extract_tikz.py <input_file> <output_file> [--to_pdf=<bool>]
 ```
 
-#Options
+# Options
 ```
 --to_pdf=<bool>                   compile tikz files to pdf[default: False]
 ```
