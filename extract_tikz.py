@@ -1,12 +1,12 @@
 '''
 Usage:
-    extract_tikz.py --in=<file> --out=<file>
+    extract_tikz.py <in_file> <out_file> [--to_pdf=<bool>]
 
 Options:
-    --in=<file>                       input tex file name
-    --out=<file>                      output tex file name
+    --to_pdf=<bool>                   compile tikz files to pdf[default: False]
 '''
 import re
+import os
 from docopt import docopt
 
 def read_file(file_name):
@@ -41,10 +41,11 @@ def tikz_block_search(content):
             blocks_dict[block_start]=(block_end,block_label)
     return blocks_dict
 
-def write_tikz(content,blocks_dict):
+def write_tikz(content,blocks_dict,to_pdf):
     """
     @param content (list[str]): input tex file contents
     @param blocks (dict): output dict of the form {block_start:(block_end,block_label)} from tikz_block_search
+    @param to_pdf (bool): whether to compile tikz figures into pdf
     writes a .tikz file for each block
     @returns out (list[str]): output tex file contents
     """
@@ -54,8 +55,8 @@ def write_tikz(content,blocks_dict):
         if i in blocks_dict.keys(): #start of tikz block
             block_start = i
             block_end, block_label = blocks_dict[i]
-            out.append('\\input{'+block_label+'.tikz}\n')
-            out.append('%\\includegraphics{'+block_label+'}\n')
+            out.append(to_pdf*'%'+'\\input{'+block_label+'.tikz}\n')
+            out.append((not to_pdf)*'%'+'\\includegraphics{'+block_label+'}\n')
             write_file(block_label+'.tikz', content[block_start:block_end+1])
             i = block_end +1
         else:
@@ -65,13 +66,15 @@ def write_tikz(content,blocks_dict):
 
 def main():
     args = docopt(__doc__)
-    in_file_name = args['--in']
-    out_file_name = args['--out']
-    # to_pdf = args['--to_pdf']
+    in_file_name = args['<in_file>']
+    out_file_name = args['<out_file>']
+    to_pdf = bool(args['--to_pdf'])
     content = read_file(in_file_name)
     blocks_dict = tikz_block_search(content)
-    out = write_tikz(content,blocks_dict)
+    out = write_tikz(content,blocks_dict,to_pdf)
     write_file(out_file_name,out)
+    if to_pdf:
+        os.system('cmd /k "bash tikz2tex.sh"')
 
 if __name__=='__main__':
     main()
