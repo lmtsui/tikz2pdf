@@ -19,38 +19,45 @@ def write_file(file_name,content):
         for line in content:
             f.write(line)
 
-def chunk_search(content):
+def tikz_block_search(content):
     """
     @param content (list[str]): input tex file contents
-    output: chunks (dict): chunk[begin tikz line no] = (end tikz line no, label of figure )
+    identify tikz blocks and extracts figure names from label
+    @returns blocks_dict (dict): blocks_dict[begin tikz line no] = (end tikz line no, label of figure )
     """
-    chunks={}
+    blocks_dict={}
+    in_block = False #flag for being within a tikz block
     for i,line in enumerate(content):
         if '\\begin{tikzpicture}' in line:
-            chunk_start = i
+            assert not in_block
+            block_start = i
+            in_block = True
         if '\\end{tikzpicture}' in line:
-            chunk_end = i
-        if '\\label' in line:
-            chunk_label = re.search('label{(.+?)}',line).group(1)
-            chunks[chunk_start]=(chunk_end,chunk_label)
-    return chunks
+            assert in_block
+            block_end = i
+            in_block = False
+            assert '\\label' in content[i+1] #assumes \label{XXX} immediately follows \end{tikzpicture} in the next line.
+            block_label = re.search('label{(.+?)}',content[i+1]).group(1) #extracts figure name from \label{XXX}
+            blocks_dict[block_start]=(block_end,block_label)
+    return blocks_dict
 
-def write_tikz(content,chunks):
+def write_tikz(content,blocks_dict):
     """
     @param content (list[str]): input tex file contents
-    @param chunks (dict): output dict from chunk_search
-    writes a .tikz file for each chunk,
-    outout: out (list[str]): output tex file contents
+    @param blocks (dict): output dict of the form {block_start:(block_end,block_label)} from tikz_block_search
+    writes a .tikz file for each block
+    @returns out (list[str]): output tex file contents
     """
     i=0
     out = []
     while i<len(content):
-        if i in chunks.keys():
-            chunk_start = i
-            chunk_end, chunk_label = chunks[i]
-            out.append('\\input{./figure/'+chunk_label+'.tikz}\n')
-            write_file(chunk_label+'.tikz', content[chunk_start:chunk_end+1])
-            i = chunk_end +1
+        if i in blocks_dict.keys(): #start of tikz block
+            block_start = i
+            block_end, block_label = blocks_dict[i]
+            out.append('\\input{'+block_label+'.tikz}\n')
+            out.append('%\\includegraphics{'+block_label+'}\n')
+            write_file(block_label+'.tikz', content[block_start:block_end+1])
+            i = block_end +1
         else:
             out.append(content[i])
             i+=1
@@ -60,10 +67,10 @@ def main():
     args = docopt(__doc__)
     in_file_name = args['--in']
     out_file_name = args['--out']
-    # to_pdf = args['--compile_to_pdf']
+    # to_pdf = args['--to_pdf']
     content = read_file(in_file_name)
-    chunks = chunk_search(content)
-    out = write_tikz(content,chunks)
+    blocks_dict = tikz_block_search(content)
+    out = write_tikz(content,blocks_dict)
     write_file(out_file_name,out)
 
 if __name__=='__main__':
