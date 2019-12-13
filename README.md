@@ -1,7 +1,7 @@
 # tikz2pdf
 usage: 
 ```
-python extract_tikz.py input_file output_file [--to_pdf=<bool>]
+python extract_tikz.py <input_file> <output_file> [--to_pdf=<bool>]
 ```
 
 Options:
