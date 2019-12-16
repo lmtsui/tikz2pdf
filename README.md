@@ -20,13 +20,13 @@ More precisely, replaces every block in input .tex
 ```
 by (if to_pdf is False)
 ```
-\input{./figure/figure_name.tikz}
+\input{figure_name.tikz}
 %\includegraphics{figure_name}
 \label{figure_name}
 ```
 or (if to_pdf is True)
 ```
-%\input{./figure/figure_name.tikz}
+%\input{figure_name.tikz}
 \includegraphics{figure_name}
 \label{figure_name}
 ```
